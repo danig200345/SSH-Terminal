@@ -1,0 +1,124 @@
+<section class="sheet" (click)="close()" aria-label="Panel de conexión">
+  <aside
+    class="sheet__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="sheet-title"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="sheet__head">
+      <div>
+        <p class="eyebrow">{{ editingId ? 'Editar' : 'Nueva' }}</p>
+        <h1 id="sheet-title">{{ editingId ? 'Editar conexión' : 'Nueva conexión' }}</h1>
+      </div>
+      <button type="button" class="icon-btn sheet__close" (click)="close()" aria-label="Cerrar panel">
+        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+      </button>
+    </header>
+
+    <form [formGroup]="form" (ngSubmit)="save()" class="sheet__form">
+      <div class="sheet__body">
+        <section class="form-section">
+          <h2 class="form-section__title">Identidad</h2>
+          <label class="field">
+            <span class="field__label">Nombre <span class="field__req" aria-hidden="true">*</span></span>
+            <input
+              class="field__control"
+              formControlName="name"
+              type="text"
+              placeholder="Producción"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <span class="field__help">Es el nombre que verás en la biblioteca.</span>
+          </label>
+        </section>
+
+        <section class="form-section">
+          <h2 class="form-section__title">Servidor</h2>
+          <label class="field">
+            <span class="field__label">Host o IP <span class="field__req" aria-hidden="true">*</span></span>
+            <input
+              class="field__control"
+              formControlName="host"
+              type="text"
+              placeholder="servidor.ejemplo.com"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </label>
+          <div class="field-row">
+            <label class="field field--port">
+              <span class="field__label">Puerto <span class="field__req" aria-hidden="true">*</span></span>
+              <input class="field__control" formControlName="port" type="number" min="1" max="65535" />
+            </label>
+            <label class="field">
+              <span class="field__label">Usuario <span class="field__req" aria-hidden="true">*</span></span>
+              <input
+                class="field__control"
+                formControlName="username"
+                type="text"
+                placeholder="ubuntu"
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </label>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h2 class="form-section__title">Autenticación</h2>
+          <label class="field">
+            <span class="field__label">Método</span>
+            <select class="field__control" formControlName="authenticationType">
+              <option value="password">Contraseña</option>
+              <option disabled>Llave privada · próximamente</option>
+            </select>
+          </label>
+
+          @if (form.controls.authenticationType.value === 'password') {
+            <label class="field">
+              <span class="field__label">
+                Contraseña
+                @if (!editingId) { <span class="field__req" aria-hidden="true">*</span> }
+              </span>
+              <input
+                class="field__control"
+                formControlName="password"
+                type="password"
+                [placeholder]="editingId ? 'Sin cambios' : 'Contraseña del servidor'"
+                autocomplete="current-password"
+              />
+              @if (form.controls.password.touched && form.controls.password.hasError('required')) {
+                <span class="field__error">Introduce la contraseña para guardar la conexión.</span>
+              } @else {
+                <span class="field__help">
+                  {{ editingId ? 'Déjala vacía para conservar la contraseña actual.' : 'Se cifra con el llavero del sistema.' }}
+                </span>
+              }
+            </label>
+          }
+        </section>
+
+        @if (form.invalid && form.touched) {
+          <p class="form-alert" role="alert">
+            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7.5v5M12 16.5h.01" />
+            </svg>
+            Revisa los campos marcados. Nombre, host y usuario son obligatorios, y el puerto debe estar entre 1 y 65535.
+          </p>
+        }
+
+        <p class="form-note">Los campos con <span aria-hidden="true">*</span> son obligatorios.</p>
+      </div>
+
+      <footer class="sheet__foot">
+        <button type="button" class="btn btn--ghost" (click)="close()">Cancelar</button>
+        <button type="submit" class="btn btn--primary">
+          {{ editingId ? 'Guardar cambios' : 'Guardar conexión' }}
+        </button>
+      </footer>
+    </form>
+  </aside>
+</section>

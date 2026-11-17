@@ -1,0 +1,211 @@
+:host {
+  display: block;
+}
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.58);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  animation: sheet-fade 160ms var(--ease);
+}
+
+.sheet__panel {
+  display: flex;
+  width: min(462px, 100%);
+  height: 100%;
+  flex-direction: column;
+  border-left: 1px solid var(--hairline-strong);
+  background: linear-gradient(160deg, rgba(35, 35, 42, 0.98), var(--surface));
+  box-shadow: var(--elevated-edge), var(--shadow-sheet);
+  animation: sheet-in var(--motion) var(--ease);
+}
+
+.sheet { background: rgba(0, 0, 0, 0.62); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.sheet__panel { background: linear-gradient(160deg, rgba(31, 35, 45, 0.98), var(--surface)); box-shadow: var(--elevated-edge), var(--shadow-sheet); }
+.form-section { background: rgba(0, 0, 0, 0.13); box-shadow: var(--elevated-edge); }
+.sheet__foot { background: rgba(13, 15, 20, 0.9); }
+
+/* Hoja Apple oscura: contención tonal y foco azul. */
+.sheet { background: rgba(0, 0, 0, 0.62); -webkit-backdrop-filter: saturate(180%) blur(16px); backdrop-filter: saturate(180%) blur(16px); }
+.sheet__panel { background: #1d1d1f; border-left: 1px solid var(--border); box-shadow: none; }
+.sheet__head h1 { font-family: var(--font-display); font-weight: 600; letter-spacing: -.02em; }
+.form-section { border-color: var(--border); border-radius: var(--radius-md); background: var(--surface); box-shadow: none; }
+.form-section__title { color: var(--muted); font-family: var(--font-body); font-weight: 600; letter-spacing: 0; text-transform: none; }
+.sheet__foot { background: #1d1d1f; border-top-color: var(--hairline); }
+
+/* Formulario como herramienta de consola, sin superficies decorativas. */
+.sheet__panel { background: #111111; }
+.sheet__head h1 { font-size: 28px; line-height: 1; }
+.form-section { border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: transparent; }
+.form-section__title { font-family: var(--font-mono); font-size: 10px; }
+
+/* Panel lateral cálido para el modo Claude oscuro. */
+.sheet { background: rgba(20, 20, 19, .78); }
+.sheet__panel { background: var(--ground); box-shadow: var(--shadow-sheet); }
+.sheet__head h1 { font-family: var(--font-display); font-weight: 500; letter-spacing: 0; text-transform: none; }
+.form-section { border-color: var(--hairline); background: var(--panel); }
+.form-section__title { color: var(--accent); font-family: var(--font-body); letter-spacing: .06em; }
+.sheet__foot { background: var(--ground); }
+
+/* Panel de conexión adaptado al sistema nocturno. */
+.sheet { background: rgba(0, 0, 0, .72); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.sheet__panel { width: min(500px, 100%); border-left-color: var(--hairline-strong); background: var(--ground); box-shadow: none; }
+.sheet__head { padding: 32px 28px 24px; border-color: var(--hairline); }
+.sheet__head h1 { font-family: var(--font-display); font-size: 32px; font-weight: 500; letter-spacing: -.035em; line-height: .95; text-transform: uppercase; }
+.eyebrow, .form-section__title { color: var(--muted); }
+.sheet__body { gap: 20px; padding: 28px; }
+.form-section { padding: 20px; border: 0; border-radius: var(--radius-md); background: var(--surface); box-shadow: none; }
+.sheet__foot { padding: 18px 28px; border-color: var(--hairline); background: var(--ground); }
+
+.sheet__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.eyebrow {
+  margin: 0 0 5px;
+  color: var(--accent);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.sheet__close {
+  margin-top: -2px;
+}
+
+.sheet__form {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.sheet__body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 26px;
+  overflow-y: auto;
+  padding: 26px 24px 32px;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 16px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  background: rgba(0, 0, 0, 0.12);
+  box-shadow: var(--elevated-edge);
+}
+
+.form-section__title {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.form-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 0;
+  padding: 11px 12px;
+  border: 1px solid rgba(255, 107, 99, 0.28);
+  border-radius: 10px;
+  background: var(--danger-soft);
+  color: #ffb3ae;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.form-alert .ui-icon {
+  margin-top: 1px;
+  color: var(--danger);
+}
+
+.form-note {
+  margin: -6px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.sheet__foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: none;
+  padding: 16px 24px;
+  border-top: 1px solid var(--hairline-strong);
+  background: rgba(14, 14, 18, 0.72);
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 520px) {
+  .sheet__panel {
+    width: 100%;
+  }
+}
+
+/* Hoja de trabajo clara */
+.sheet { background: rgba(13, 13, 13, 0.18); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+.sheet__panel { background: var(--ground); box-shadow: var(--shadow-sheet); }
+.form-section { background: var(--surface); box-shadow: none; }
+.sheet__foot { background: var(--ground); }
+
+.sheet { background: rgba(0, 0, 0, 0.62); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.sheet__panel { background: linear-gradient(160deg, rgba(31, 35, 45, 0.98), var(--surface)); box-shadow: var(--elevated-edge), var(--shadow-sheet); }
+.form-section { background: rgba(0, 0, 0, 0.13); box-shadow: var(--elevated-edge); }
+.sheet__foot { background: rgba(13, 15, 20, 0.9); }

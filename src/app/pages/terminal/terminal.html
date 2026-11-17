@@ -1,0 +1,374 @@
+<main class="terminal-shell">
+  <header class="app-bar session-bar">
+    <div class="bar-left">
+      <button type="button" class="icon-btn" (click)="openConnections()" aria-label="Volver a conexiones">
+        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+      </button>
+      <button type="button" class="brand workspace-link" (click)="openConnections()" aria-label="SSH Client, volver a conexiones">
+        <span class="brand__mark" aria-hidden="true">
+          <svg class="ui-icon" viewBox="0 0 24 24"><path d="m5 8 4 4-4 4M12 16h7" /></svg>
+        </span>
+        <span class="brand__name">SSH Client</span>
+      </button>
+      <span class="bar-divider" aria-hidden="true"></span>
+      <nav class="tabstrip" aria-label="Sesiones abiertas">
+        @for (tab of sessions.tabs(); track tab.id) {
+          <div class="tab" [class.tab--active]="sessions.activeId() === tab.id">
+            <button type="button" class="tab__label" (click)="openTab(tab.id)">{{ tab.label }}</button>
+            <button type="button" class="tab__close" (click)="closeTab(tab.id, $event)" [attr.aria-label]="'Cerrar ' + tab.label">
+              <svg class="ui-icon ui-icon--sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+            </button>
+          </div>
+        }
+        <button type="button" class="tab-new" (click)="openConnections()" aria-label="Abrir otra conexión">
+          <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        </button>
+      </nav>
+    </div>
+
+    <div class="bar-right terminal-tools">
+      <div class="view-switch" role="group" aria-label="Vista de trabajo">
+        <button type="button" class="tool-toggle" [class.tool-toggle--on]="activeView() === 'terminal'" (click)="setView('terminal')" aria-label="Vista Terminal" title="Vista Terminal">
+          <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 8 4 4-4 4M12 16h7" /></svg>
+          <span class="tool-toggle__label">Terminal</span>
+        </button>
+        <button type="button" class="tool-toggle" [class.tool-toggle--on]="activeView() === 'files'" (click)="setView('files')" aria-label="Vista Archivos" title="Vista Archivos">
+          <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V5h7l2 2h9v13H3Z" /></svg>
+          <span class="tool-toggle__label">Archivos</span>
+        </button>
+      </div>
+      @if (activeView() === 'terminal') {
+        <button type="button" class="tool-toggle" [class.tool-toggle--on]="explorerOpen()" (click)="explorerOpen.set(!explorerOpen())" [attr.aria-expanded]="explorerOpen()" aria-controls="remote-explorer" title="Mostrar u ocultar árbol remoto">
+          <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h16" /></svg>
+        </button>
+      }
+      <button type="button" class="tool-toggle" (click)="openSearch()" title="Buscar en terminal (Ctrl+F)">
+        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="6" />
+          <path d="m20 20-4.3-4.3" />
+        </svg>
+        <span class="tool-toggle__label">Buscar</span>
+      </button>
+
+      @if (status() === 'connecting') {
+        <span class="status status--connecting" role="status"><span class="status__dot"></span>Conectando</span>
+      }
+      @if (status() === 'connected') {
+        <span class="status status--connected" role="status"><span class="status__dot"></span>Conectado</span>
+      }
+      @if (status() === 'error') {
+        <span class="status status--error" role="status"><span class="status__dot"></span>Sin conexión</span>
+      }
+    </div>
+  </header>
+
+  <div class="remote-workspace" [class.remote-workspace--explorer]="(activeView() === 'terminal' && explorerOpen()) || activeView() === 'files'">
+    @if ((activeView() === 'terminal' && explorerOpen()) || activeView() === 'files') {
+      <aside id="remote-explorer" class="remote-explorer" [class.remote-explorer--editor]="activeView() === 'files'" [attr.aria-label]="activeView() === 'files' ? 'Explorador del editor remoto' : 'Archivos remotos de la terminal'">
+        <header class="explorer-head">
+          <div class="explorer-heading">
+            <h2>{{ activeView() === 'files' ? 'Explorador' : 'Archivos remotos' }}</h2>
+            <div class="explorer-actions">
+              <button
+                type="button"
+                (click)="refreshTree()"
+                [disabled]="treeRefreshing() || directoryLoading() || !directory() || status() !== 'connected'"
+                aria-label="Actualizar carpetas desplegadas"
+                title="Actualizar carpetas desplegadas"
+              >
+                <svg class="ui-icon ui-icon--sm" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M20 7v5h-5M20 12a8 8 0 1 0-2 5M20 12l-5-5" />
+                </svg>
+              </button>
+              <button type="button" (click)="collapseTree()" [disabled]="!directory()" aria-label="Contraer todas las subcarpetas" title="Contraer todo">
+                <svg class="ui-icon ui-icon--sm" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m7 8 5-5 5 5M7 16l5 5 5-5M5 12h14" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <span class="explorer-server" [title]="serverLabel()">{{ serverLabel() }}</span>
+        </header>
+
+        <form class="explorer-path" (submit)="$event.preventDefault(); openExplorerPath()">
+          <label for="remote-path">Cambiar carpeta raíz</label>
+          <div class="explorer-path__row">
+            <input
+              id="remote-path"
+              name="remotePath"
+              [value]="pathDraft()"
+              (input)="pathDraft.set($any($event.target).value)"
+              [disabled]="directoryLoading() || status() !== 'connected'"
+              placeholder="/ruta/remota"
+              autocomplete="off"
+              spellcheck="false"
+              required
+            />
+            <button type="submit" [disabled]="directoryLoading() || status() !== 'connected'">Ir</button>
+          </div>
+          <p class="explorer-path__hint">{{ activeView() === 'files' ? 'Raíz del explorador del editor.' : 'Raíz del explorador de la Terminal.' }}</p>
+        </form>
+
+        <p class="explorer-current-path" [title]="directory()?.path ?? ''">{{ directory()?.path ?? 'Carpeta inicial del usuario' }}</p>
+
+        <input
+          class="explorer-filter"
+          type="search"
+          aria-label="Filtrar elementos ya cargados"
+          aria-describedby="explorer-filter-help"
+          placeholder="Filtrar elementos cargados…"
+          [value]="fileFilter()"
+          (input)="fileFilter.set($any($event.target).value)"
+        />
+        <p id="explorer-filter-help" class="explorer-hint">Filtra lo cargado, no busca en el servidor.</p>
+
+        <div class="explorer-list" [attr.aria-busy]="directoryLoading()">
+          @if (status() === 'connecting') {
+            <p class="explorer-message" role="status">Esperando conexión SSH…</p>
+          } @else if (status() === 'error') {
+            <p class="explorer-message" role="status">No hay una conexión SSH disponible.</p>
+          } @else {
+            @if (directoryLoading()) {
+              <p class="explorer-message" role="status">Cargando nueva raíz…</p>
+            }
+            @if (directoryError(); as message) {
+              <p class="explorer-message explorer-message--error" role="alert">{{ message }}</p>
+              <button type="button" class="explorer-retry" (click)="openExplorerPath()" [disabled]="directoryLoading()">
+                Reintentar raíz
+              </button>
+            }
+            <div #fileTree role="tree" aria-label="Carpetas y archivos remotos">
+              @for (row of visibleTree(); track row.path) {
+                <button
+                  type="button"
+                  role="treeitem"
+                  class="explorer-entry"
+                  [class.explorer-entry--selected]="selectedPath() === row.path"
+                  [class.explorer-entry--folder]="row.kind === 'directory'"
+                  [style.padding-left.px]="8 + row.depth * 16"
+                  [style.min-width.px]="140 + row.depth * 16"
+                  [attr.data-path]="row.path"
+                  [attr.aria-level]="row.depth + 1"
+                  [attr.aria-selected]="selectedPath() === row.path"
+                  [attr.aria-expanded]="row.kind === 'directory' || row.kind === 'link' ? row.expanded : null"
+                  [attr.aria-busy]="row.state?.loading ?? false"
+                  [attr.tabindex]="focusedTreePath() === row.path ? 0 : -1"
+                  [title]="row.path"
+                  (click)="onTreeClick($event, row)"
+                  (keydown)="onTreeKeydown($event, row)"
+                >
+                  <svg class="explorer-chevron" [class.explorer-chevron--open]="row.expanded" viewBox="0 0 16 16" aria-hidden="true">
+                    @if (row.kind === 'directory' || row.kind === 'link') {
+                      <path d="m6 4 4 4-4 4" />
+                    }
+                  </svg>
+                  <svg class="explorer-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    @if (row.kind === 'directory') {
+                      @if (row.expanded) {
+                        <path d="M3 10V5h7l2 2h8v3M3 10h19l-4 10H3Z" />
+                      } @else {
+                        <path d="M3 7V5h7l2 2h9v13H3Z" />
+                      }
+                    } @else if (row.kind === 'link') {
+                      <path d="m10 14 4-4M8 16l-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0M16 8l1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0" />
+                    } @else {
+                      <path d="M6 3h8l4 4v14H6ZM14 3v5h4" />
+                    }
+                  </svg>
+                  <span class="explorer-entry-name">{{ row.name }}</span>
+                </button>
+                @if (row.expanded) {
+                  @if (row.state?.loading) {
+                    <p class="explorer-node-message" role="status" [style.margin-left.px]="32 + row.depth * 16">Cargando…</p>
+                  } @else if (row.state?.error; as message) {
+                    <div class="explorer-node-message explorer-message--error" role="alert" [style.margin-left.px]="32 + row.depth * 16">
+                      {{ message }} <button type="button" class="explorer-retry" (click)="loadBranch(row.path)">Reintentar</button>
+                    </div>
+                  } @else if (row.state?.data?.entries?.length === 0) {
+                    <p class="explorer-node-message" [style.margin-left.px]="32 + row.depth * 16">Carpeta vacía</p>
+                  }
+                }
+              }
+            </div>
+            @if (fileFilter() && visibleTree().length === 1 && visibleTree()[0].expanded) {
+              <p class="explorer-message" role="status">Sin coincidencias en los elementos cargados.</p>
+            }
+          }
+        </div>
+
+        <footer class="explorer-foot">{{ treeRefreshing() ? 'Actualizando carpetas…' : 'Solo exploración · Flechas para navegar' }}</footer>
+      </aside>
+    }
+
+    <section class="terminal-frame" [class.terminal-frame--hidden]="activeView() === 'files'" aria-label="Terminal SSH" (contextmenu)="onContextMenu($event)">
+      <div #terminalContainer class="terminal-container"></div>
+
+      @if (searchOpen()) {
+        <div class="terminal-search" role="search">
+          <svg class="ui-icon terminal-search__icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="6" />
+            <path d="m20 20-4.3-4.3" />
+          </svg>
+          <input
+            #searchInput
+            type="search"
+            [value]="searchQuery()"
+            (input)="searchQuery.set($any($event.target).value); onSearchInput()"
+            (keydown.enter)="findNext()"
+            (keydown.shift.enter)="findPrevious()"
+            placeholder="Buscar en terminal…"
+            aria-label="Buscar en terminal"
+          />
+          <button type="button" class="search-step" (click)="findPrevious()" aria-label="Resultado anterior">
+            <svg class="ui-icon ui-icon--sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 14 6-6 6 6" /></svg>
+          </button>
+          <button type="button" class="search-step" (click)="findNext()" aria-label="Resultado siguiente">
+            <svg class="ui-icon ui-icon--sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 10 6 6 6-6" /></svg>
+          </button>
+          <span class="terminal-search__count" role="status">
+            {{ searchQuery() && searchResult()?.count === 0 ? 'Sin resultados' : ((searchResult()?.index ?? -1) + 1) + '/' + (searchResult()?.count ?? 0) }}
+          </span>
+          <span class="terminal-search__divider" aria-hidden="true"></span>
+          <button
+            type="button"
+            class="search-opt"
+            [class.search-opt--on]="searchCaseSensitive()"
+            (click)="searchCaseSensitive.set(!searchCaseSensitive()); onSearchInput()"
+            [attr.aria-pressed]="searchCaseSensitive()"
+            aria-label="Distinguir mayúsculas y minúsculas"
+            title="Mayúsculas/minúsculas"
+          >
+            Aa
+          </button>
+          <button
+            type="button"
+            class="search-opt"
+            [class.search-opt--on]="searchWholeWord()"
+            (click)="searchWholeWord.set(!searchWholeWord()); onSearchInput()"
+            [attr.aria-pressed]="searchWholeWord()"
+            aria-label="Palabra completa"
+            title="Palabra completa"
+          >
+            Ab
+          </button>
+          <button
+            type="button"
+            class="search-opt"
+            [class.search-opt--on]="searchRegex()"
+            (click)="searchRegex.set(!searchRegex()); onSearchInput()"
+            [attr.aria-pressed]="searchRegex()"
+            aria-label="Expresión regular"
+            title="Expresión regular"
+          >
+            .*
+          </button>
+          <button type="button" class="search-step search-step--close" (click)="closeSearch()" aria-label="Cerrar búsqueda">
+            <svg class="ui-icon ui-icon--sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+          </button>
+        </div>
+      }
+
+      @if (contextMenu(); as menu) {
+        <div class="terminal-context-menu" [style.left.px]="menu.x" [style.top.px]="menu.y" role="menu">
+          <button type="button" role="menuitem" (click)="copyFromContextMenu()" [disabled]="!hasSelection()">
+            <span>Copiar</span>
+            <kbd>Ctrl+Shift+C</kbd>
+          </button>
+          <button type="button" role="menuitem" (click)="pasteFromContextMenu()">
+            <span>Pegar</span>
+            <kbd>Ctrl+Shift+V</kbd>
+          </button>
+        </div>
+      }
+
+      @if (unknownHost(); as host) {
+        <aside class="trust-card" role="dialog" aria-modal="true" aria-labelledby="trust-title">
+          <span class="trust-card__mark" aria-hidden="true">
+            <svg class="ui-icon ui-icon--lg" viewBox="0 0 24 24">
+              <path d="M12 3 5 6v5c0 4.2 3 7.4 7 8.5 4-1.1 7-4.3 7-8.5V6Z" />
+              <path d="M12 9v3M12 15.5h.01" />
+            </svg>
+          </span>
+          <h2 id="trust-title">Servidor desconocido</h2>
+          <p class="trust-card__host">{{ host.host }}<span>:{{ host.port }}</span></p>
+          <p class="trust-card__copy">
+            Es la primera vez que conectas a este servidor. Comprueba que la huella coincide con la que conoce el administrador.
+          </p>
+          <code class="fingerprint">{{ host.fingerprint }}</code>
+          <button type="button" (click)="trustHost()" class="btn btn--primary trust-button">Confiar y conectar</button>
+          <p class="trust-card__hint">Si no reconoces esta huella, vuelve a Conexiones y no continúes.</p>
+        </aside>
+      }
+
+      @if (errorMessage() && !unknownHost()) {
+        <aside class="terminal-error" role="alert">
+          <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7.5v5M12 16.5h.01" />
+          </svg>
+          {{ errorMessage() }}
+        </aside>
+      }
+    </section>
+
+    @if (activeView() === 'files') {
+      <section class="file-manager" aria-label="Administrador de archivos remoto">
+        <header class="file-manager__bar">
+          <div class="file-manager__actions">
+            <button type="button" class="file-manager__create" (click)="openCreate('folder')" [disabled]="directoryLoading()">Nueva carpeta</button>
+            <button type="button" class="file-manager__create" (click)="openCreate('file')" [disabled]="directoryLoading()">Nuevo archivo</button>
+            <button type="button" class="file-manager__nav" (click)="goBack()" [disabled]="!canGoBack() || directoryLoading()" aria-label="Atrás" title="Atrás">
+              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
+            </button>
+            <button type="button" class="file-manager__nav" (click)="goForward()" [disabled]="!canGoForward() || directoryLoading()" aria-label="Adelante" title="Adelante">
+              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6" /></svg>
+            </button>
+            <button type="button" class="file-manager__nav" (click)="goUp()" [disabled]="!canGoUp() || directoryLoading()" aria-label="Subir un nivel" title="Subir un nivel">
+              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6" /></svg>
+            </button>
+            <button type="button" class="file-manager__nav" (click)="loadManagerDirectory(managerDirectory()?.path ?? '.')" [disabled]="directoryLoading() || !managerDirectory()" aria-label="Actualizar" title="Actualizar">
+              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M20 12a8 8 0 1 0-2 5M20 12l-5-5" /></svg>
+            </button>
+          </div>
+          <form class="file-manager__address" (submit)="$event.preventDefault(); navigateFiles(managerPathDraft())">
+            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V5h7l2 2h9v13H3Z" /></svg>
+            <input [value]="managerPathDraft()" (input)="managerPathDraft.set($any($event.target).value)" [disabled]="directoryLoading()" aria-label="Ruta remota" autocomplete="off" spellcheck="false" />
+          </form>
+        </header>
+        @if (createKind(); as kind) {
+          <form class="file-manager__create-form" (submit)="$event.preventDefault(); createItem()">
+            <label [for]="'new-' + kind">{{ kind === 'folder' ? 'Nombre de la carpeta nueva' : 'Nombre del archivo nuevo' }}</label>
+            <input [id]="'new-' + kind" [value]="newItemName()" (input)="newItemName.set($any($event.target).value)" [disabled]="fileActionLoading()" required autocomplete="off" />
+            <button type="submit" class="btn btn--primary" [disabled]="fileActionLoading() || !newItemName()">{{ fileActionLoading() ? 'Creando…' : 'Crear' }}</button>
+            <button type="button" class="btn btn--secondary" (click)="createKind.set(null)" [disabled]="fileActionLoading()">Cancelar</button>
+            @if (fileActionError(); as message) { <p class="file-manager__action-error" role="alert">{{ message }}</p> }
+          </form>
+        }
+        <section class="file-editor-area" aria-label="Área de edición remota">
+          @if (editorLoading()) { <p class="file-manager__empty" role="status">Abriendo archivo…</p> }
+          @if (editorTabs().length) {
+            <nav class="file-tabs" aria-label="Archivos abiertos">
+              @for (tab of editorTabs(); track tab.path) {
+                <div class="file-tab" [class.file-tab--active]="activeEditorPath() === tab.path">
+                  <button type="button" (click)="activateEditor(tab.path)" [title]="tab.path">{{ tab.path.split('/').at(-1) }}</button>
+                  @if (tab.content !== tab.original) { <span class="file-tab__dirty" aria-label="Cambios sin guardar">●</span> }
+                  <button type="button" class="file-tab__close" (click)="closeEditor(tab.path)" [attr.aria-label]="'Cerrar ' + tab.path.split('/').at(-1)">×</button>
+                </div>
+              }
+            </nav>
+            @if (editor(); as file) {
+              <section class="file-editor" aria-label="Editor de archivo remoto">
+                <header class="file-editor__bar">
+                  <span [title]="file.path">{{ file.path }}</span>
+                  <button type="button" class="btn btn--primary" (click)="saveEditor()" [disabled]="editorSaving() || !editorDirty()">{{ editorSaving() ? 'Guardando…' : 'Guardar' }}</button>
+                </header>
+                @if (editorError(); as message) { <p class="file-manager__action-error" role="alert">{{ message }}</p> }
+                <textarea class="file-editor__textarea" [value]="file.content" (input)="updateEditor($any($event.target).value)" spellcheck="false" aria-label="Contenido del archivo"></textarea>
+              </section>
+            }
+          }
+        </section>
+      </section>
+    }
+  </div>
+</main>

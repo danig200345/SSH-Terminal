@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist/electron",
+    "rootDir": "electron",
+    "module": "Node16",
+    "moduleResolution": "node16",
+    "target": "ES2022",
+    "types": ["node", "electron"],
+    "skipLibCheck": true,
+    "noEmit": false
+  },
+  "include": ["electron/**/*.ts"]
+}

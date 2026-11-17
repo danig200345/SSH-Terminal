@@ -1,0 +1,53 @@
+{
+  "name": "ssh-client",
+  "version": "0.0.0",
+  "main": "dist/electron/main.js",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "start:electron": "wait-on http://localhost:4200 && cross-env ELECTRON_RENDERER_URL=http://localhost:4200 electron .",
+    "dev": "concurrently -k \"npm run start\" \"npm run start:electron\"",
+    "build:angular": "ng build",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "build": "npm run build:angular && npm run build:electron",
+    "desktop": "electron .",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test"
+  },
+  "private": true,
+  "packageManager": "npm@11.12.0",
+  "dependencies": {
+    "@angular/common": "^22.2.0",
+    "@angular/compiler": "^22.2.0",
+    "@angular/core": "^22.2.0",
+    "@angular/forms": "^22.2.0",
+    "@angular/platform-browser": "^22.2.0",
+    "@angular/router": "^22.2.0",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/addon-search": "^0.16.0",
+    "@xterm/addon-webgl": "^0.19.0",
+    "@xterm/xterm": "^6.0.0",
+    "electron-store": "^12.0.0",
+    "rxjs": "~7.8.0",
+    "ssh2": "^1.17.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^22.2.4",
+    "@angular/cli": "^22.2.4",
+    "@angular/compiler-cli": "^22.2.0",
+    "@tailwindcss/postcss": "^4.1.12",
+    "@types/node": "^24.0.0",
+    "@types/ssh2": "^1.15.6",
+    "concurrently": "^10.0.6",
+    "cross-env": "^10.1.0",
+    "electron": "^44.9.1",
+    "jsdom": "^30.0.0",
+    "postcss": "^8.5.3",
+    "prettier": "^3.8.1",
+    "tailwindcss": "^4.1.12",
+    "typescript": "~6.0.2",
+    "vitest": "^5.0.0",
+    "wait-on": "^9.0.4"
+  }
+}
